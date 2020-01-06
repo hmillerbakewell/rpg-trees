@@ -185,16 +185,29 @@ var showGraph = function (data) {
 
 
     const costPush = function (alpha) {
-        for (var i = 0, n = nodes.length, node, k = alpha * 0.1; i < n; ++i) {
-            node = nodes[i];
-            let r = Math.max(Math.pow((node.x * node.x + node.y * node.y), 0.5), 1)
-            let ideal = idealSpacing * node.cost
-            let speed = 0.1 * Math.abs(ideal - r) * (ideal - r) / r
-            speed = speed / Math.max(Math.abs(speed), 20)
-            node.vx = constrain(node.vx + speed * node.x)
-            node.vy = constrain(node.vy + speed * node.y)
+        let displayType = "radial"
+        if (displayType == "radial") {
+            for (var i = 0, n = nodes.length, node, k = alpha * 0.1; i < n; ++i) {
+                node = nodes[i];
+                let r = Math.max(Math.pow((node.x * node.x + node.y * node.y), 0.5), 1)
+                let ideal = idealSpacing * node.cost
+                let speed = 0.1 * Math.abs(ideal - r) * (ideal - r) / r
+                speed = speed / Math.max(Math.abs(speed), 20)
+                node.vx = constrain(node.vx + speed * node.x)
+                node.vy = constrain(node.vy + speed * node.y)
+            }
+        } else {
+            for (var i = 0, n = nodes.length, node, k = alpha * 0.1; i < n; ++i) {
+                node = nodes[i];
+                let r = node.y
+                let ideal = idealSpacing * node.cost
+                let speed = 0.1 * Math.abs(ideal - r) * (ideal - r) / r
+                speed = speed / Math.max(Math.abs(speed), 20)
+                node.vy = constrain(node.vy + speed * node.y)
+            }
         }
     }
+
 
 
     const simulation = d3.forceSimulation(nodes)
