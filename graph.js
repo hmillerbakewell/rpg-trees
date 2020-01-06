@@ -1,74 +1,84 @@
 let textToGraph = function (text) {
-    let nodes = [{ id: "Start", cost: 0 }]
-    let edges = []
+    try {
+        let nodes = [{ id: "Start", cost: 0 }]
+        let edges = []
 
-    let byName = function (name) {
-        for (var j = 0; j < nodes.length; j++) {
-            if (nodes[j].id.toLowerCase() == name.toLowerCase()) { return nodes[j] }
+        let byName = function (name) {
+            for (var j = 0; j < nodes.length; j++) {
+                if (nodes[j].id.toLowerCase() == name.toLowerCase()) { return nodes[j] }
+            }
+            errorMsg(`I'm afraid there is no node by the name of '${name}', connecting the offending node to the Start node for now.`)
+            return nodes[0]
         }
-    }
 
-    let lineToJSON = function (l) {
-        if (l.length == 0) {
-            return
-        }
-        let parts = l.split("needs")
-        let name = parts[0].trim()
-        nodes.push({
-            id: name
-        })
-        if (parts.length > 1) {
-            let dependencies = parts[1].split(",")
-            for (var j = 0; j < dependencies.length; j++) {
-                let d = dependencies[j].trim()
-                let minSpend = 1
-                if (d[0].match(/\d/)) {
-                    let words = d.split(" ")
-                    minSpend = parseInt(words.shift())
-                    d = words.join(" ")
+        let lineToJSON = function (l) {
+            if (l.length == 0) {
+                return
+            }
+            let parts = l.split("needs")
+            let name = parts[0].trim()
+            nodes.push({
+                id: name
+            })
+            if (parts.length > 1) {
+                let dependencies = parts[1].split(",")
+                for (var j = 0; j < dependencies.length; j++) {
+                    let d = dependencies[j].trim()
+                    let minSpend = 1
+                    if (d[0].match(/\d/)) {
+                        let words = d.split(" ")
+                        minSpend = parseInt(words.shift())
+                        d = words.join(" ")
+                    }
+
+                    edges.push({
+                        source: byName(d).id,
+                        target: name,
+                        minSpend: minSpend
+                    })
                 }
-
+            } else {
                 edges.push({
-                    source: byName(d).id,
+                    source: "Start",
                     target: name,
-                    minSpend: minSpend
+                    minSpend: 1
                 })
             }
-        } else {
-            edges.push({
-                source: "Start",
-                target: name,
-                minSpend: 1
+        }
+        text.split("\n").forEach(l => lineToJSON(l.trim()))
+
+        let findCost = function (node) {
+            let edgesIn = edges.filter(e => (e.target == node.id))
+            let costs = edgesIn.map(function (e) {
+                let dependency = byName(e.source)
+                return findCost(dependency) + e.minSpend
+            })
+            if (costs.length == 0) {
+                return 0
+            }
+            return costs.reduce(function (a, b) { return Math.min(a, b) })
+        }
+        // Now work out the cost of reaching each node
+        for (var j = 0; j < nodes.length; j++) {
+            nodes = nodes.map(function (n) {
+                let cost = n.cost
+                if (cost == undefined) {
+                    cost = findCost(n)
+                }
+                return { id: n.id, cost: cost }
             })
         }
-    }
-    text.split("\n").forEach(l => lineToJSON(l.trim()))
 
-    let findCost = function (node) {
-        let edgesIn = edges.filter(e => (e.target == node.id))
-        let costs = edgesIn.map(function (e) {
-            let dependency = byName(e.source)
-            return findCost(dependency) + e.minSpend
-        })
-        if (costs.length == 0) {
-            return 0
-        }
-        return costs.reduce(function (a, b) { return Math.min(a, b) })
-    }
-    // Now work out the cost of reaching each node
-    for (var j = 0; j < nodes.length; j++) {
-        nodes = nodes.map(function (n) {
-            let cost = n.cost
-            if (cost == undefined) {
-                cost = findCost(n)
-            }
-            return { id: n.id, cost: cost }
-        })
-    }
+        console.log(nodes)
 
-    console.log(nodes)
+        showGraph({ links: edges, nodes: nodes })
+    } catch (e) {
+        errorMsg("I'm afraid the input text isn't formatted in a way I can understand.")
+    }
+}
 
-    showGraph({ links: edges, nodes: nodes })
+let errorMsg = function (s) {
+    alert(s)
 }
 
 let parseText = function () {
@@ -190,7 +200,7 @@ var showGraph = function (data) {
     const simulation = d3.forceSimulation(nodes)
         .force("link", d3.forceLink(links)
             .id(d => d.id).
-            strength(0.1))
+            strength(0.3))
         .force("charge", d3.forceManyBody().strength(-500))
         .force("mid", midForce)
         .force("costPush", costPush)
@@ -318,13 +328,13 @@ let load = function () {
     document.getElementById("txtSkillDependency").value = decodeTree(document.cookie)
 }
 
-let decodeTree = function(s){
-    return s.replace("%20"," ").split("|||").join("\n")
+let decodeTree = function (s) {
+    return s.replace("%20", " ").split("|||").join("\n")
 }
 
 let encodeTree = function () {
     let text = document.getElementById("txtSkillDependency").value
-    return text.replace(/ /g,"%20").split("\n").join("|||")
+    return text.replace(/ /g, "%20").split("\n").join("|||")
 }
 
 // From GET
