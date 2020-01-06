@@ -1,16 +1,17 @@
 <head>
     <script src="seedrandom.min.js"></script>
-    <script src="generator.js"></script>
-    <script src="graph.js"></script>
     <script src="d3.v5.min.js"></script>
     <script src="jquery-3.4.1.min.js"></script>
+    <script src="generator.js"></script>
+    <script src="graph.js"></script>
+    <link rel="stylesheet" type="text/css" href="normalize.css">
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 
 <body onload="parseText()" style="font-family:Verdana, Geneva, Tahoma, sans-serif">
 
     <div id="formHolder" style="display: grid; grid-template-columns: 2fr 3fr;
-    grid-column-gap: 2em;">
+    grid-column-gap: 3em; padding: 2em">
         <div class="heading">
             Description
         </div>
@@ -18,37 +19,57 @@
             Tree
         </div>
         <div class="words" style="grid-column: 1; display: grid; grid-template-rows: auto 1fr auto;" ;>
-            <div>
+            <div class="introText">
                 Type in the description of the skill tree here.
                 Format:
                 <ul>
-                    <li>"SkillA" for a skill with no dependencies</li>
-                    <li>"SkillA needs SkillB"
+                    <li><code>SkillA</code> for a skill with no dependencies</li>
+                    <li><code>SkillA needs SkillB</code>
                         for a skill which requires at least one point in SkillB</li>
-                    <li>"SkillA needs X SkillB, ..., Y SkillN"
-                        for a skill which requires X points in SkillB OR ... OR Y points in SkillN</li>
+                    <li><code>SkillA needs SkillB, ... , SkillN</code>
+                        for a skill which requires points in SkillB OR ... OR points in SkillN</li>
+                    <li><code>SkillA needs N SkillB</code>
+                        for a skill which requires N points in SkillB (can be used with multiple dependencies)</li>
                 </ul>
-                Click outside the box to show update the diagram
+                Click outside the box to update the diagram
             </div>
-            <textarea id="txtSkillDependency"
-            style="resize:none; width: 100%; height:100%; border: 1px solid grey;"
-            onChange="parseText()">
+            <textarea id="txtSkillDependency" style="resize:none; width: 100%; height:100%; padding: 0.2em; border: 1px solid grey;
+            white-space: pre;" onChange="parseText()">
 Dash
 Quickshot
 Hawkeye needs Quickshot, Dash
 Leap needs Dash
 High Noon needs Hawkeye
+High Tea needs 2 High Noon
 Doze
 Sleep needs 2 Doze
 Nap needs 1 Doze
-Dream needs 2 Nap, 1 Sleep</textarea>
-            <div id="controls"
-                style="display:grid; grid-template-columns: 1fr 1fr;grid-row-gap: 1em;align-content: start;
+Dream needs 2 Nap, Sleep</textarea>
+
+            <div id="controls" style="display:grid; grid-template-columns: 1fr 1fr;grid-row-gap: 1em;align-content: start;
                 padding: 1em">
+                <div>
+                    In-browser storage (cookie)
+                </div>
+                <div>
+                    <button onclick="save()">Save</button><button onclick="load()">Load</button>
+                </div>
+                <div>
+                    Shareable link
+                </div>
+                <div>
+                    <input type="text" readonly="true" id="txtLink"></input> <button  onclick="copyLink()">Copy</button>
+                </div>
                 <div>Show minimum skill costs</div>
                 <div>
-                    <input type="radio" name="showCostNumbers" onchange="redrawTextOnly()" value="true">Yes</input>
+                    <input type="radio" name="showCostNumbers" onchange="redrawTextOnly()" value="true"
+                        checked="checked">Yes</input>
                     <input type="radio" name="showCostNumbers" onchange="redrawTextOnly()" value="false">No</input>
+                </div>
+                <div>Skill cost ring opacity</div>
+                <div>
+                    <input type="range" id="ranRingOpacity" value="0" step="25" min="0" max="100"
+                        oninput="redrawTextOnly()" onchange="redrawTextOnly()"></input>
                 </div>
                 <div>
                     Green-out skills that cost less than
@@ -65,9 +86,10 @@ Dream needs 2 Nap, 1 Sleep</textarea>
             </div>
         </div>
         <div id="mapColumn" style="grid-column: 2; display: grid; grid-template-columns: auto, 1fr;">
-            <div>The Skill Tree is drawn below; use the mouse wheel to zoom in and out,
+            <div class="introText">The Skill Tree is drawn below; use the mouse wheel to zoom in and out,
                 or the mouse to drag.
-                Nodes will try and space themselves out, such that higher cost skills are further from the start.
+                Nodes will try and space themselves out, such that higher cost skills are further from the start,
+                but complicated trees will need to be manually nudged around before they space out nicely.
                 Settings are to the bottom left.
             </div>
             <div id="map" style="border: 1px solid grey; margin: 1em"></div>

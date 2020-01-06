@@ -77,15 +77,22 @@ let parseText = function () {
 }
 
 let redrawTextOnly = function () {
+
+    // Update the link
+    document.getElementById("txtLink").value = (new URL(window.location.href).origin) + "?tree=" + encodeTree()
+
+    // Actual redrawing
     let costLower = parseInt(document.getElementById("txtCostThresholdLower").value)
     let costUpper = parseInt(document.getElementById("txtCostThresholdUpper").value)
     let showCosts = $("input[name='showCostNumbers']:checked").val() == "true"
+    let ringOpacity = ($("#ranRingOpacity").val() / 100)
+    $(".rings").attr("stroke-opacity", ringOpacity)
     $(".textGroup").toArray().forEach(function (e) {
         let displayName = showCosts ? $(e).attr("name") + ` (${$(e).attr("cost")})` : $(e).attr("name")
         if ($(e).attr("cost") < costLower) {
             $("text", e).attr("fill", "#7A7")
             $("text", e).html(displayName)
-        } else if($(e).attr("cost") > costUpper) {
+        } else if ($(e).attr("cost") > costUpper) {
             $("text", e).attr("fill", "#77A")
             $("text", e).html(displayName)
         } else {
@@ -105,7 +112,7 @@ var showGraph = function (data) {
     console.log(data)
 
     let maxCost = data.nodes.map(n => n.cost).reduce(function (a, b) { return Math.max(a, b) })
-    idealSpacing = (2 * 0.9 * size) / maxCost
+    idealSpacing = 100 // (2 * 0.9 * size) / maxCost
 
     var selected = null;
 
@@ -172,7 +179,7 @@ var showGraph = function (data) {
             node = nodes[i];
             let r = Math.max(Math.pow((node.x * node.x + node.y * node.y), 0.5), 1)
             let ideal = idealSpacing * node.cost
-            let speed = 0.1 * (ideal - r) / r
+            let speed = 0.1 * Math.abs(ideal - r) * (ideal - r) / r
             speed = speed / Math.max(Math.abs(speed), 20)
             node.vx = constrain(node.vx + speed * node.x)
             node.vy = constrain(node.vy + speed * node.y)
@@ -183,10 +190,11 @@ var showGraph = function (data) {
     const simulation = d3.forceSimulation(nodes)
         .force("link", d3.forceLink(links)
             .id(d => d.id).
-            strength(0.05))
-        .force("charge", d3.forceManyBody().strength(-300))
+            strength(0.1))
+        .force("charge", d3.forceManyBody().strength(-500))
         .force("mid", midForce)
         .force("costPush", costPush)
+        .alpha(0.1)
 
     d3.selectAll("#map > *").remove();
     const svg = d3.select("#map").append("svg")
@@ -202,6 +210,14 @@ var showGraph = function (data) {
 
     function zoomed() {
         g.attr("transform", d3.event.transform);
+    }
+
+    for (var j = maxCost + 1; j > 0; j--) {
+        g.append("circle").attr("r", idealSpacing * (j - 0.5))
+            .attr("stroke", "grey")
+            .attr("stroke-opacity", 0.4)
+            .attr("fill-opacity", 0)
+            .attr("class", "rings")
     }
 
     const link = g.append("g")
@@ -238,7 +254,7 @@ var showGraph = function (data) {
             return d.id;
         })
         .attr('fill', "black")
-        .attr('x', 6)
+        .attr('x', 0)
         .attr('y', 3);
 
     node.call(getTextBox)
@@ -261,7 +277,7 @@ var showGraph = function (data) {
 
     var circles = node
         .append("circle")
-        .attr("r", "20px")
+        .attr("r", "10px")
         .attr("fill", "white")
 
     var labels1 = node
@@ -274,7 +290,7 @@ var showGraph = function (data) {
             return d.id;
         })
         .attr('fill', "black")
-        .attr('x', 6)
+        .attr('x', 0)
         .attr('y', 3);
 
 
@@ -292,4 +308,49 @@ var showGraph = function (data) {
         node
             .attr("transform", d => `translate(${d.x},${d.y})`);
     });
+}
+
+let save = function () {
+    document.cookie = encodeTree()
+}
+
+let load = function () {
+    document.getElementById("txtSkillDependency").value = decodeTree(document.cookie)
+}
+
+let decodeTree = function(s){
+    return s.replace("%20"," ").split("|||").join("\n")
+}
+
+let encodeTree = function () {
+    let text = document.getElementById("txtSkillDependency").value
+    return text.replace(/ /g,"%20").split("\n").join("|||")
+}
+
+// From GET
+
+var loadedURL = new URL(window.location.href).search;
+var search_params = new URLSearchParams(loadedURL);
+var inputValue = search_params.get('tree');
+$(document).ready(function () {
+    if (inputValue) {
+        let decoded = decodeTree(inputValue)
+        document.getElementById("txtSkillDependency").value = decoded
+        textToGraph(decoded)
+    }
+    redrawTextOnly()
+}
+)
+
+let copyLink = function () {
+
+    var textElement = document.getElementById("txtLink");
+
+    /* Select the text field */
+    textElement.select();
+    textElement.setSelectionRange(0, 99999); /*For mobile devices*/
+    document.execCommand("copy");
+
+    /* Alert the copied text */
+    alert("Copied the text: " + textElement.value);
 }
